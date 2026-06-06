@@ -22,8 +22,16 @@ const publicContactRoutes = require("./routes/publicContact");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors());
+
 app.use(express.json());
+app.use(cors({
+  origin: [
+    "https://fswd-iota.vercel.app",
+    "https://fswd-efrx.vercel.app"
+  ],
+  credentials: true
+}));
+
 
 app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
