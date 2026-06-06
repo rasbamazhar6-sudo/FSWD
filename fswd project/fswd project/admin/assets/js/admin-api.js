@@ -1,8 +1,10 @@
-// Talk to the backend — uses same port as the page when served from Express
+// Talk to the backend — uses API_BASE_URL from config.js (Railway in production, localhost in dev)
 const API_BASE =
-  window.location.protocol === "http:" || window.location.protocol === "https:"
-    ? window.location.origin + "/api"
-    : "http://localhost:3000/api";
+  typeof API_BASE_URL !== "undefined" && API_BASE_URL
+    ? API_BASE_URL + "/api"
+    : (window.location.protocol === "http:" || window.location.protocol === "https:"
+        ? window.location.origin + "/api"
+        : "http://localhost:3000/api");
 
 function saveToken(token) {
   localStorage.setItem("adminToken", token);

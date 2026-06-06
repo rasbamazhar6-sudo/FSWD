@@ -36,6 +36,9 @@ function getPaymentApiUrl() {
   if (typeof getBackendOrigin === "function") {
     return getBackendOrigin() + "/api/public/contact";
   }
+  if (typeof API_BASE_URL !== "undefined" && API_BASE_URL) {
+    return API_BASE_URL + "/api/public/contact";
+  }
   if (window.location.protocol === "http:" || window.location.protocol === "https:") {
     return window.location.origin + "/api/public/contact";
   }

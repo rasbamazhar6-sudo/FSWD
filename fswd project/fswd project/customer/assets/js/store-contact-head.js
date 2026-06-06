@@ -1,9 +1,12 @@
 /**
- * Loads store contact from the Express backend (port 3000) even when the page
- * is opened via Live Server or another static server on a different port.
+ * Loads store contact from the Express backend.
+ * Uses API_BASE_URL from config.js (Railway in production, localhost in dev).
  */
 (function () {
   function getBackendOrigin() {
+    if (typeof API_BASE_URL !== "undefined" && API_BASE_URL) {
+      return API_BASE_URL;
+    }
     var loc = window.location;
     var host = loc.hostname === "127.0.0.1" ? "127.0.0.1" : "localhost";
     if (

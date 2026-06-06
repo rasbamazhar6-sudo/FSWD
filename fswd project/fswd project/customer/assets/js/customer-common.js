@@ -13,8 +13,12 @@ const AUTH_HERO_FALLBACK = "/assets/images/auth-showroom.svg";
 
 const DEFAULT_BACKEND_PORT = "3000";
 
-/** Express API — always port 3000 unless the page is already served from there. */
+/** Express API — uses API_BASE_URL from config.js (Railway in production, localhost in dev). */
 function getBackendOrigin() {
+  if (typeof API_BASE_URL !== "undefined" && API_BASE_URL) {
+    return API_BASE_URL;
+  }
+  // Fallback for local dev if config.js didn't load
   const loc = window.location;
   const host = loc.hostname === "127.0.0.1" ? "127.0.0.1" : "localhost";
   if (
