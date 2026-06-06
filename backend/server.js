@@ -22,8 +22,24 @@ const customerRoutes = require("./routes/customers");
 const publicContactRoutes = require("./routes/publicContact");
 
 const app = express();
-const PORT = Number(process.env.PORT) || 3000;
-const HOST = "0.0.0.0";
+
+app.get("/api/health", function (req, res) {
+  res.status(200).json({
+    ok: true,
+    message: "A & S Traders API is running",
+    database: isDbConnected && isDbConnected() ? "connected" : "disconnected",
+    uptime: process.uptime()
+  });
+});
+
+app.get("/health", function (req, res) {
+  res.status(200).json({
+    ok: true,
+    message: "A & S Traders API is running",
+    database: isDbConnected && isDbConnected() ? "connected" : "disconnected",
+    uptime: process.uptime()
+  });
+});
 
 const allowedOrigins = (process.env.CORS_ORIGINS || "")
   .split(",")
@@ -32,31 +48,37 @@ const allowedOrigins = (process.env.CORS_ORIGINS || "")
   })
   .filter(Boolean);
 
-function getAllowedOrigins() {
-  const defaults = [
-    "https://fswd-iota.vercel.app",
-    "https://fswd-efrx.vercel.app",
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-  ];
-  return defaults.concat(allowedOrigins);
-}
-
 function isAllowedOrigin(origin) {
   if (!origin) return true;
+  if (allowedOrigins.includes(origin)) return true;
 
-  if (getAllowedOrigins().includes(origin)) return true;
-
-  if (/^https:\/\/[a-zA-Z0-9.-]+\.vercel\.app$/.test(origin)) {
+  if (
+    origin === "http://localhost:3000" ||
+    origin === "http://127.0.0.1:3000"
+  ) {
     return true;
   }
 
-  if (/^https:\/\/[a-zA-Z0-9-]+\.up\.railway\.app$/.test(origin)) {
+  if (/^https:\/\/[a-zA-Z0-9-]+\.vercel\.app$/.test(origin)) {
     return true;
   }
 
   return false;
 }
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (isAllowedOrigin(origin)) return callback(null, true);
+    return callback(new Error("Not allowed by CORS: " + origin));
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
+
+app.options("*", cors());
+
+app.use(express.json({ limit: "10mb" }));
 
 function validateEnv() {
   const missing = [];
@@ -79,21 +101,6 @@ function validateEnv() {
     }
   }
 }
-
-app.use(express.json({ limit: "10mb" }));
-
-const corsOptions = {
-  origin: function (origin, callback) {
-    if (isAllowedOrigin(origin)) {
-      return callback(null, true);
-    }
-    return callback(new Error("Not allowed by CORS: " + origin));
-  },
-  credentials: true,
-};
-
-app.use(cors(corsOptions));
-app.options("*", cors(corsOptions));
 
 app.use(function (req, res, next) {
   if (
@@ -132,13 +139,10 @@ app.use("/api/public", requireDb, publicContactRoutes);
 app.use("/api/public/customers", requireDb, customerAuthRoutes);
 app.use("/api/customers", requireDb, customerRoutes);
 
-app.get("/api/health", function (req, res) {
-  const connected = isDbConnected();
-  res.status(connected ? 200 : 503).json({
-    ok: connected,
-    message: connected ? "A & S Traders API is running" : "API up but database not connected",
-    database: connected ? "connected" : "disconnected",
-    uptime: process.uptime(),
+app.use("/api", function (req, res) {
+  res.status(404).json({
+    message: "API route not found",
+    path: req.originalUrl
   });
 });
 
@@ -181,25 +185,31 @@ function scheduleDbRetry() {
   }, 10000);
 }
 
-async function start() {
-  validateEnv();
+const PORT = process.env.PORT || 3000;
 
-  app.listen(PORT, HOST, function () {
-    console.log("Server listening on " + HOST + ":" + PORT);
-    console.log("Health: /api/health");
-    console.log("CORS origins:", getAllowedOrigins().join(", "));
+const server = app.listen(PORT, "0.0.0.0", function () {
+  console.log("Server listening on 0.0.0.0:" + PORT);
+});
+
+process.on("unhandledRejection", function (err) {
+  console.error("Unhandled rejection:", err);
+});
+
+process.on("uncaughtException", function (err) {
+  console.error("Uncaught exception:", err);
+});
+
+process.on("SIGTERM", function () {
+  console.log("SIGTERM received, shutting down gracefully");
+  server.close(function () {
+    process.exit(0);
   });
+});
 
-  try {
-    await connectDB();
-  } catch (err) {
-    console.error("Initial MongoDB connection failed — retrying every 10s");
-    console.error(err.message);
-    scheduleDbRetry();
-  }
-}
+validateEnv();
 
-start().catch(function (err) {
-  console.error("Failed to start server:", err.message);
-  process.exit(1);
+connectDB().catch(function (err) {
+  console.error("Initial MongoDB connection failed — retrying every 10s");
+  console.error(err.message);
+  scheduleDbRetry();
 });
