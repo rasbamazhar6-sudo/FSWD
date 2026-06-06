@@ -23,8 +23,10 @@ function proofImageUrl(path) {
   if (!path) return "";
   if (path.startsWith("http://") || path.startsWith("https://")) return path;
   const origin =
-    typeof getBackendOrigin === "function"
-      ? getBackendOrigin()
-      : window.location.origin;
+    typeof API_BASE_URL !== "undefined"
+      ? API_BASE_URL
+      : typeof getBackendOrigin === "function"
+        ? getBackendOrigin()
+        : "https://fswd-production.up.railway.app";
   return origin + path;
 }

@@ -11,22 +11,16 @@ const PRODUCT_IMAGES_BY_SKU = {
 const AUTH_HERO_IMAGE = "/assets/images/auth-showroom.jpg";
 const AUTH_HERO_FALLBACK = "/assets/images/auth-showroom.svg";
 
-const DEFAULT_BACKEND_PORT = "3000";
 const PRODUCTION_API_URL = "https://fswd-production.up.railway.app";
 
-/** Express API — Railway in production, localhost in local dev. */
+/** Backend origin — always from config.js (API_BASE_URL). */
 function getBackendOrigin() {
-  if (typeof API_BASE_URL !== "undefined" && API_BASE_URL) {
-    return API_BASE_URL;
-  }
-  const host = window.location.hostname;
-  if (host === "localhost" || host === "127.0.0.1") {
-    return "http://localhost:" + DEFAULT_BACKEND_PORT;
-  }
+  if (typeof API_BASE_URL !== "undefined") return API_BASE_URL;
   return PRODUCTION_API_URL;
 }
 
 function getPublicApiBase() {
+  if (typeof PUBLIC_API_URL !== "undefined") return PUBLIC_API_URL;
   return getBackendOrigin() + "/api/public";
 }
 
@@ -101,7 +95,7 @@ function assetUrl(path) {
     const loc = window.location;
     const onBackend =
       (loc.protocol === "http:" || loc.protocol === "https:") &&
-      (loc.port === DEFAULT_BACKEND_PORT || loc.port === "");
+      (loc.port === "3000" || loc.port === "");
     return (onBackend ? getAppOrigin() : getBackendOrigin()) + p;
   }
   return p;
@@ -569,7 +563,10 @@ function applyStoreContact(contact) {
 
 async function loadStoreContact() {
   try {
-    const response = await fetch(getBackendOrigin() + "/api/public/contact", { cache: "no-store" });
+    const response = await fetch(
+      (typeof PUBLIC_API_URL !== "undefined" ? PUBLIC_API_URL : getPublicApiBase()) + "/contact",
+      { cache: "no-store" }
+    );
     const data = await response.json();
     if (response.ok && data.contact) {
       applyStoreContact(data.contact);

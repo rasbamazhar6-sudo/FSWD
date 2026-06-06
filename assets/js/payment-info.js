@@ -33,15 +33,11 @@ var PAYMENT_INFO = {
 var paymentInfoReady = null;
 
 function getPaymentApiUrl() {
-  if (typeof getBackendOrigin === "function") {
-    return getBackendOrigin() + "/api/public/contact";
+  if (typeof PUBLIC_API_URL !== "undefined") {
+    return PUBLIC_API_URL + "/contact";
   }
-  if (typeof API_BASE_URL !== "undefined" && API_BASE_URL) {
+  if (typeof API_BASE_URL !== "undefined") {
     return API_BASE_URL + "/api/public/contact";
-  }
-  var host = window.location.hostname;
-  if (host === "localhost" || host === "127.0.0.1") {
-    return "http://localhost:3000/api/public/contact";
   }
   return "https://fswd-production.up.railway.app/api/public/contact";
 }
